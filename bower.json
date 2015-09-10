@@ -1,0 +1,25 @@
+{
+  "name": "Bezier Curve",
+  "version": "1.0.000",
+  "description": "Bezier Curve",
+  "author": {
+    "name": "Naftali Andrade Santos",
+    "team": "NAS"
+  },
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "dependencies",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+  },
+  "dependencies": {
+    "jquery": "~2.1.4",
+    "gsap": "~1.17.0",
+    "bootstrap": "~3.3.5"
+  }
+}
