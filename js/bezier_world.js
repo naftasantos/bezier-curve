@@ -106,11 +106,18 @@ BezierWorld.prototype.drawPoints = function(context) {
 };
 
 BezierWorld.prototype.drawBezierCurve = function(context) {
-    var steps = 750;
-    var pFinal = null;
+    var steps = 1000;
+    var currentPoint = null;
     var pointRadius = 3;
 
-    for (var i=0; i < steps; ++i) {
+    var lastPoint = null;
+
+    for (var i=0; i <= steps; ++i) {
+        /*var start = -1;
+        var end = 2;
+        var length = 3;
+
+        var t = start + (i / steps) * length;*/
         var t = i / steps;
 
         var p0 = this.points[0].pos;
@@ -118,10 +125,10 @@ BezierWorld.prototype.drawBezierCurve = function(context) {
         var p2 = this.points[2].pos;
         var p3 = this.points[3].pos;
 
-        pFinal = Bezier.cubic(p0, p1, p2, p3, t, pFinal);
+        currentPoint = Bezier.cubic(p0, p1, p2, p3, t, currentPoint);
 
-        var pX = pFinal.x * context.canvas.width;
-        var pY = (1 - pFinal.y) * context.canvas.height;
+        var pX = currentPoint.x * context.canvas.width;
+        var pY = (1 - currentPoint.y) * context.canvas.height;
 
         context.beginPath();
         context.arc(pX, pY, pointRadius, 0, 2 * Math.PI, false);
@@ -152,11 +159,14 @@ BezierWorld.prototype.drawReference = function(context) {
     context.fillRect(0, context.canvas.height - 5, context.canvas.width, 
         context.canvas.height);
 
+    var originA = this.originPoints[0].canvasPos();
+    var originB = this.originPoints[1].canvasPos();
+
     context.beginPath();
-    context.moveTo(0, this.canvas.height);
+    context.moveTo(originA.x, originA.y);
     context.strokeStyle = "rgba(127, 127, 127, 0.5)";
     context.lineWidth = 10;
-    context.lineTo(this.canvas.width, 0);
+    context.lineTo(originB.x, originB.y);
     context.stroke();
     context.closePath();
 
@@ -188,3 +198,12 @@ BezierWorld.prototype.getRandomColor = function() {
     }
     return color;
 };
+
+BezierWorld.prototype.rect = function() {
+    return {
+        x = 10,
+        y = 10,
+        width = this.canvas.width - 10,
+        height = this.canvas.height - 10
+    };
+}
