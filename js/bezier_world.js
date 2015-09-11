@@ -11,13 +11,13 @@ function BezierWorld(canvas){
             x: 0,
             y: 0,
             color: "#FFF",
-            canvas: canvas
+            world: this
         }),
         new BezierPoint({
             x: 1,
             y: 1,
             color: "#FFF",
-            canvas: canvas
+            world: this
         })
     ]
 
@@ -26,13 +26,13 @@ function BezierWorld(canvas){
             x: 0.25, 
             y: 0.1,
             color: "#FF0088",
-            canvas: canvas
+            world: this
         }),
         new BezierPoint({
             x: 0.75, 
             y: 0.9,
             color: "#00AABB",
-            canvas: canvas
+            world: this
         })
     ]
 
@@ -47,6 +47,7 @@ function BezierWorld(canvas){
 };
 
 BezierWorld.prototype.update = function(gameTime) {
+    var worldRect = this.rect();
     this.fps = gameTime.fps;
 
     if(!Input.IS_MOUSE_DOWN) {
@@ -56,8 +57,11 @@ BezierWorld.prototype.update = function(gameTime) {
     var mouseOverAny = false;
 
     for(var pointIdx in this.points) {
+        var convertedMouse = new Vector(Input.MousePosition.x - worldRect.x,
+            Input.MousePosition.y - worldRect.y);
+
         var point = this.points[pointIdx];
-        var diff = point.canvasPos().subtract(Input.MousePosition);
+        var diff = point.worldPos().subtract(convertedMouse);
 
         if(diff.lengthSqr() <= (point.radius * point.radius)) {
             mouseOverAny = true;
@@ -85,18 +89,41 @@ BezierWorld.prototype.update = function(gameTime) {
 };
 
 BezierWorld.prototype.draw = function(context) {
+    var worldRect = this.rect();
+
     context.fillStyle = this.backgroundColor;
-    context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+    context.fillRect(worldRect.x, worldRect.y, worldRect.width, worldRect.height);
 
     this.drawBackground(context);
+    this.drawBorder(context);
     this.drawReference(context);
     this.drawBezierCurve(context);
     this.drawPoints(context);
+    this.drawCursor(context);
 
     context.fillStyle   = this.textColor;
     context.font        = this.textFont;
 
     context.fillText("fps: " + this.fps, 10, 15);
+};
+
+BezierWorld.prototype.drawCursor = function(context) {
+    var worldRect = this.rect();
+
+    var convertedX = Input.MousePosition.x - worldRect.x;
+    var convertedY = Input.MousePosition.y - worldRect.y;
+
+    var ballX = convertedX;
+    var ballY = convertedY;
+
+    var canvasX = worldRect.x + ballX;
+    var canvasY = worldRect.y + ballY;
+
+    context.beginPath();
+    context.arc(canvasX, canvasY, 5, 0, 2 * Math.PI, false);
+    context.fillStyle = "rgba(0, 0, 0, 0.5)";
+    context.fill();
+    context.closePath();
 };
 
 BezierWorld.prototype.drawPoints = function(context) {
@@ -106,11 +133,12 @@ BezierWorld.prototype.drawPoints = function(context) {
 };
 
 BezierWorld.prototype.drawBezierCurve = function(context) {
-    var steps = 1000;
+    var steps = 750;
     var currentPoint = null;
     var pointRadius = 3;
-
     var lastPoint = null;
+
+    var worldRect = this.rect();
 
     for (var i=0; i <= steps; ++i) {
         /*var start = -1;
@@ -127,8 +155,8 @@ BezierWorld.prototype.drawBezierCurve = function(context) {
 
         currentPoint = Bezier.cubic(p0, p1, p2, p3, t, currentPoint);
 
-        var pX = currentPoint.x * context.canvas.width;
-        var pY = (1 - currentPoint.y) * context.canvas.height;
+        var pX = worldRect.x + (currentPoint.x * worldRect.width);
+        var pY = worldRect.y + (1 - currentPoint.y) * worldRect.height;
 
         context.beginPath();
         context.arc(pX, pY, pointRadius, 0, 2 * Math.PI, false);
@@ -139,25 +167,43 @@ BezierWorld.prototype.drawBezierCurve = function(context) {
 }
 
 BezierWorld.prototype.drawBackground = function(context) {
+    var worldRect = this.rect();
+
     var stripesCount = 10;
     var brightStripeColor = "#fff";
     var darkStripeColor = "#eeeeee";
-    var stripeHeight = Math.round(context.canvas.height / stripesCount);
+    var stripeHeight = Math.round(worldRect.height / stripesCount);
 
     for(var i=0; i < stripesCount; ++i) {
         context.fillStyle = i % 2 ? brightStripeColor : darkStripeColor;
-        context.fillRect(0, i * stripeHeight, context.canvas.width, 
-            stripeHeight);
+        context.fillRect(worldRect.x, worldRect.y + (i * stripeHeight),
+            worldRect.width, stripeHeight);
     }
 };
 
+BezierWorld.prototype.drawBorder = function(context) {
+    var worldRect = this.rect();
+
+    context.beginPath();
+    context.moveTo(worldRect.x, worldRect.y);
+    context.strokeStyle = "rgba(200, 200, 200, 1)";
+    context.lineWidth = 2;
+    context.lineTo(worldRect.x + worldRect.width, worldRect.y);
+    context.lineTo(worldRect.x + worldRect.width,
+        worldRect.y + worldRect.height);
+    context.stroke();
+    context.closePath();
+}
+
 BezierWorld.prototype.drawReference = function(context) {
-    context.fillStyle = "#000";
-    context.fillRect(0, 0, 5, context.canvas.height);
+    var worldRect = this.rect();
 
     context.fillStyle = "#000";
-    context.fillRect(0, context.canvas.height - 5, context.canvas.width, 
-        context.canvas.height);
+    context.fillRect(worldRect.x, worldRect.y, 3, worldRect.height);
+
+    context.fillStyle = "#000";
+    context.fillRect(worldRect.x, worldRect.y + (worldRect.height - 3),
+        worldRect.width, 3);
 
     var originA = this.originPoints[0].canvasPos();
     var originB = this.originPoints[1].canvasPos();
@@ -200,10 +246,16 @@ BezierWorld.prototype.getRandomColor = function() {
 };
 
 BezierWorld.prototype.rect = function() {
+    var scale   = 0.8;
+    var width   = this.canvas.width * scale;
+    var height  = this.canvas.height * scale;
+    var diffX   = this.canvas.width - width;
+    var diffY   = this.canvas.height - height;
+
     return {
-        x = 10,
-        y = 10,
-        width = this.canvas.width - 10,
-        height = this.canvas.height - 10
+        x: diffX / 2,
+        y: diffY / 2,
+        width: width,
+        height: height
     };
 }

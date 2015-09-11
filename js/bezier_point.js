@@ -1,5 +1,5 @@
 function BezierPoint(params) {
-    this.canvas     = params.canvas;
+    this.world      = params.world;
     this.pos        = new Vector(params.x, params.y);
     this.color      = params.color;
     this.isMoving   = false;
@@ -13,9 +13,14 @@ function BezierPoint(params) {
 }
 
 BezierPoint.prototype.update = function(gameTime) {
+    var worldRect = this.world.rect();
+
     if(this.isMoving) {
-        var mouseX = Input.MousePosition.x / this.canvas.width;
-        var mouseY = 1 - (Input.MousePosition.y) / this.canvas.height;
+        var convertedX = Input.MousePosition.x - worldRect.x;
+        var convertedY = Input.MousePosition.y - worldRect.y;
+
+        var mouseX = convertedX / worldRect.width;
+        var mouseY = 1 - (convertedY / worldRect.height);
 
         this.pos.x = mouseX;
         this.pos.y = mouseY;
@@ -36,16 +41,32 @@ BezierPoint.prototype.draw = function(context) {
     context.closePath();
 };
 
+BezierPoint.prototype.worldX = function() {
+    var worldRect = this.world.rect();
+    return this.pos.x * worldRect.width;
+};
+
+BezierPoint.prototype.worldY = function() {
+    var worldRect = this.world.rect();
+    return (1 - this.pos.y) * worldRect.height;
+};
+
 BezierPoint.prototype.canvasX = function() {
-    return this.pos.x * this.canvas.width;
-}
+    var worldRect = this.world.rect();
+    return worldRect.x + this.worldX();
+};
 
 BezierPoint.prototype.canvasY = function() {
+    var worldRect = this.world.rect();
     // the reference is drawn as if the y0 is at the bottom,
     // so here there is the need to invert the y scale
-    return (1 - this.pos.y) * this.canvas.height;
-}
+    return worldRect.y + this.worldY();
+};
 
 BezierPoint.prototype.canvasPos = function() {
     return new Vector(this.canvasX(), this.canvasY());
-}
+};
+
+BezierPoint.prototype.worldPos = function() {
+    return new Vector(this.worldX(), this.worldY());
+};
