@@ -4,16 +4,33 @@ function BezierWorld(canvas){
     this.textColor = "#000";
     this.textFont = "12px Courier";
     this.fps = 0;
+    this.currentMovingPoint = null;
 
     this.points = [
-        { 
-            pos: new Vector(0.25, 0.1),
-            color: this.getRandomColor()
-        },
-        {
-            pos: new Vector(0.75, 0.9),
-            color: this.getRandomColor()
-        }
+        new BezierPoint( {
+            x: 0.25, 
+            y: 0.1,
+            origin: new BezierPoint({
+                x: 0,
+                y: 0,
+                color: "#FFF",
+                canvas: canvas
+            }),
+            color: "#FF0088", 
+            canvas: canvas
+        }),
+        new BezierPoint({
+            x: 0.75, 
+            y: 0.9,
+            origin: new BezierPoint({
+                x: 1,
+                y: 1,
+                color: "#FFF",
+                canvas: canvas
+            }),
+            color: "#00AABB", 
+            canvas: canvas
+        })
     ]
 
     this.reset();
@@ -21,6 +38,40 @@ function BezierWorld(canvas){
 
 BezierWorld.prototype.update = function(gameTime) {
     this.fps = gameTime.fps;
+
+    if(!Input.IS_MOUSE_DOWN) {
+        this.currentMovingPoint = null;
+    }
+
+    var mouseOverAny = false;
+
+    for(var pointIdx in this.points) {
+        var point = this.points[pointIdx];
+        var diff = point.canvasPos().subtract(Input.MousePosition);
+
+        if(diff.length() <= point.radius) {
+            mouseOverAny = true;
+
+            if(Input.IS_MOUSE_DOWN) {
+                if(!this.currentMovingPoint) {
+                    point.isMoving = true;
+                    this.currentMovingPoint = point;
+                }
+            }
+            else {
+                point.isMoving = false;
+            }
+        }
+
+        point.update(gameTime);
+    }
+
+    if(mouseOverAny) {
+        Input.cursor.hand();
+    }
+    else {
+        Input.cursor.normal();
+    }
 };
 
 BezierWorld.prototype.draw = function(context) {
@@ -38,18 +89,8 @@ BezierWorld.prototype.draw = function(context) {
 };
 
 BezierWorld.prototype.drawPoints = function(context) {
-    var pointRadius = 15;
-
     for(var i in this.points) {
-        var point = this.points[i];
-
-        var x = point.pos.x * context.canvas.width;
-        var y = point.pos.y * context.canvas.height;
-
-        context.beginPath();
-        context.arc(x, y, pointRadius, 0, 2 * Math.PI, false);
-        context.fillStyle = point.color;
-        context.fill();
+        this.points[i].draw(context);
     }
 };
 
@@ -73,6 +114,14 @@ BezierWorld.prototype.drawReference = function(context) {
     context.fillStyle = "#000";
     context.fillRect(0, context.canvas.height - 5, context.canvas.width, 
         context.canvas.height);
+
+    context.beginPath();
+    context.moveTo(0, this.canvas.height);
+    context.strokeStyle = "rgba(127, 127, 127, 0.5)";
+    context.lineWidth = 10;
+    context.lineTo(this.canvas.width, 0);
+    context.stroke();
+    context.closePath();
 };
 
 BezierWorld.prototype.reset = function() {

@@ -133,3 +133,13 @@ Input.onMouseDown = function(evt) {
 Input.onMouseUp = function(evt) {
     Input.IS_MOUSE_DOWN = false;
 }
+
+Input.cursor = {
+    normal: function() {
+        $('html,body').css('cursor','auto');
+    },
+
+    hand: function() {
+        $('html,body').css('cursor','pointer');
+    }
+}
