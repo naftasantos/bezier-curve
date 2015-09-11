@@ -2,7 +2,6 @@ function BezierPoint(params) {
     this.canvas     = params.canvas;
     this.pos        = new Vector(params.x, params.y);
     this.color      = params.color;
-    this.origin     = params.origin;
     this.isMoving   = false;
 
     if(typeof(params.radius) === "undefined") {
@@ -24,19 +23,6 @@ BezierPoint.prototype.update = function(gameTime) {
 };
 
 BezierPoint.prototype.draw = function(context) {
-    if(this.origin) {
-        context.beginPath();
-
-        context.moveTo(this.origin.canvasX(), this.origin.canvasY());
-        context.strokeStyle = "#7F7F7F";
-        context.lineWidth = 4;
-        context.lineTo(this.canvasX(), this.canvasY());
-        context.stroke();
-        context.closePath();
-
-        this.origin.draw(context);
-    }
-
     context.beginPath();
 
     context.arc(this.canvasX(), this.canvasY(), this.radius, 0, 2 * Math.PI, false);
